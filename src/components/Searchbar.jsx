@@ -2,7 +2,7 @@ import React from 'react';
 
 class Searchbar extends React.Component {
   render() {
-    const { onSubmit } = this.props; // Отримання onSubmit з пропсів
+    const { onSubmit } = this.props;
 
     return (
       <header className="searchbar">
@@ -11,6 +11,7 @@ class Searchbar extends React.Component {
             <span className="button-label">Search</span>
           </button>
           <input
+            name="searchInput"
             className="input"
             type="text"
             autoComplete="off"
