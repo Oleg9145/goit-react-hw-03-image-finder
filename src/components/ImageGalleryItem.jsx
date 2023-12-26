@@ -1,4 +1,5 @@
 import React from 'react';
+import css from '../css/styles.module.css';
 class ImagesGalleryItem extends React.Component {
   render() {
     const { image, onClick } = this.props;
@@ -6,7 +7,7 @@ class ImagesGalleryItem extends React.Component {
     const altText = `Photo id ${image.id}`;
 
     return (
-      <li className="gallery-item">
+      <li className={css.galleryitem}>
         <img src={image.webformatURL} alt={altText} onClick={onClick} />
       </li>
     );
