@@ -8,37 +8,29 @@ import { Modal } from './Modal';
 import css from '../css/styles.module.css';
 class App extends React.Component {
   state = {
-    isLoading: true,
+    isLoading: false,
     images: [],
     error: null,
     searchTerm: '',
+    prevSearchTerm: '',
     page: 1,
     modal: false,
     modalData: null,
   };
-
   onLoadMore = () => {
-    this.setState(
-      prevState => ({ page: prevState.page + 1 }),
-      () => {
-        this.loadImages(this.state.searchTerm, this.state.page);
-      }
-    );
+    this.setState(prevState => ({ page: prevState.page + 1 }));
   };
 
-  loadImages = (searchTerm, page) => {
+  loadImages = () => {
+    const { searchTerm, page } = this.state;
     this.setState({ isLoading: true });
 
     fetchImages(searchTerm, page)
       .then(newImages => {
-        if (page > 1) {
-          this.setState(prevState => ({
-            images: [...prevState.images, ...newImages],
-            isLoading: false,
-          }));
-        } else {
-          this.setState({ images: newImages, isLoading: false });
-        }
+        this.setState(prevState => ({
+          images: page > 1 ? [...prevState.images, ...newImages] : newImages,
+          isLoading: false,
+        }));
       })
       .catch(error => {
         this.setState({
@@ -49,22 +41,28 @@ class App extends React.Component {
   };
 
   componentDidMount() {
-    this.loadImages('', 1);
+    // this.loadImages();
     document.addEventListener('keydown', this.handleKeyDown);
   }
 
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.searchTerm !== this.state.searchTerm) {
-      this.loadImages(this.state.searchTerm, 1);
+    if (
+      prevState.searchTerm !== this.state.searchTerm ||
+      prevState.page !== this.state.page
+    ) {
+      if (this.state.searchTerm) {
+        this.loadImages();
+      }
     }
   }
 
   handleSubmit = e => {
     e.preventDefault();
-    const searchValue = e.currentTarget.elements.searchInput.value;
-    this.setState({ searchTerm: searchValue, page: 1 }, () => {
-      this.loadImages(searchValue, 1);
-    });
+    const searchValue = e.currentTarget.elements.searchInput.value.trim();
+
+    if (searchValue && searchValue !== this.state.searchTerm) {
+      this.setState({ searchTerm: searchValue, page: 1, images: [] });
+    }
   };
 
   handleImageClick = image => {
@@ -85,6 +83,7 @@ class App extends React.Component {
   };
   render() {
     const { images, isLoading, error, modal, modalData } = this.state;
+
     return (
       <div className={css.App}>
         <Searchbar onSubmit={this.handleSubmit} />
