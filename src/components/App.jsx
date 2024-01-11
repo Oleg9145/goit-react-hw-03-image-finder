@@ -1,104 +1,89 @@
+import React, { useState, useEffect } from 'react';
 import { ImagesGallery } from './ImageGallery';
 import { Searchbar } from './Searchbar';
-import React from 'react';
 import { fetchImages } from '../servises/server';
 import { Loader } from './Loader';
 import { Button } from './Button';
 import { Modal } from './Modal';
 import css from '../css/styles.module.css';
-class App extends React.Component {
-  state = {
-    isLoading: false,
-    images: [],
-    error: null,
-    searchTerm: '',
-    prevSearchTerm: '',
-    page: 1,
-    modal: false,
-    modalData: null,
-  };
-  onLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
-  };
 
-  loadImages = () => {
-    const { searchTerm, page } = this.state;
-    this.setState({ isLoading: true });
+const App = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [images, setImages] = useState([]);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [modal, setModal] = useState(false);
+  const [modalData, setModalData] = useState(null);
 
+  const loadImages = () => {
+    setIsLoading(true);
     fetchImages(searchTerm, page)
       .then(newImages => {
-        this.setState(prevState => ({
-          images: page > 1 ? [...prevState.images, ...newImages] : newImages,
-          isLoading: false,
-        }));
+        setImages(prevImages =>
+          page > 1 ? [...prevImages, ...newImages] : newImages
+        );
+        setIsLoading(false);
       })
       .catch(error => {
-        this.setState({
-          isLoading: false,
-          error: 'server error',
-        });
+        setIsLoading(false);
+        setError('server error');
       });
   };
 
-  componentDidMount() {
-    // this.loadImages();
-    document.addEventListener('keydown', this.handleKeyDown);
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    if (
-      prevState.searchTerm !== this.state.searchTerm ||
-      prevState.page !== this.state.page
-    ) {
-      if (this.state.searchTerm) {
-        this.loadImages();
-      }
+  useEffect(() => {
+    if (searchTerm) {
+      loadImages();
     }
-  }
+    const handleKeyDown = e => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
 
-  handleSubmit = e => {
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [searchTerm, page]);
+
+  const handleSubmit = e => {
     e.preventDefault();
     const searchValue = e.currentTarget.elements.searchInput.value.trim();
-
-    if (searchValue && searchValue !== this.state.searchTerm) {
-      this.setState({ searchTerm: searchValue, page: 1, images: [] });
+    if (searchValue && searchValue !== searchTerm) {
+      setSearchTerm(searchValue);
+      setPage(1);
+      setImages([]);
     }
   };
 
-  handleImageClick = image => {
-    this.setState({ modalData: image, modal: true });
-  };
-  closeModal = () => {
-    this.setState({ modal: false, modalData: null });
+  const handleImageClick = image => {
+    setModalData(image);
+    setModal(true);
   };
 
-  componentWillUnmount() {
-    document.removeEventListener('keydown', this.handleKeyDown);
-  }
-
-  handleKeyDown = e => {
-    if (e.key === 'Escape') {
-      this.closeModal();
-    }
+  const closeModal = () => {
+    setModal(false);
+    setModalData(null);
   };
-  render() {
-    const { images, isLoading, error, modal, modalData } = this.state;
 
-    return (
-      <div className={css.App}>
-        <Searchbar onSubmit={this.handleSubmit} />
-        {error && <div className="error">{error}</div>}
-        {isLoading ? (
-          <Loader />
-        ) : (
-          <ImagesGallery images={images} onImageClick={this.handleImageClick} />
-        )}
-        {images.length > 0 && <Button onLoadMore={this.onLoadMore} />}
-        {modal && (
-          <Modal image={modalData} isOpen={modal} onClose={this.closeModal} />
-        )}
-      </div>
-    );
-  }
-}
+  const onLoadMore = () => {
+    setPage(prevPage => prevPage + 1);
+  };
+
+  return (
+    <div className={css.App}>
+      <Searchbar onSubmit={handleSubmit} />
+      {error && <div className="error">{error}</div>}
+      {isLoading ? (
+        <Loader />
+      ) : (
+        <ImagesGallery images={images} onImageClick={handleImageClick} />
+      )}
+      {images.length > 0 && <Button onLoadMore={onLoadMore} />}
+      {modal && <Modal image={modalData} isOpen={modal} onClose={closeModal} />}
+    </div>
+  );
+};
+
 export { App };
